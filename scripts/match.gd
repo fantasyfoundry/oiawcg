@@ -232,48 +232,102 @@ func text_at(value: String, point: Vector2, size: int, color := Color("efe5cb"))
 func centered(value: String, y: float, size: int, color := Color("efe5cb")) -> void:
 	text_at(value, Vector2((960 - font.get_string_size(value, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x) / 2, y), size, color)
 
+# Simulation coordinates stay on the ice. Only drawing uses this low side camera.
+# Depth compresses strongly; upright players keep their full vertical height.
+func ice_to_screen(point: Vector2) -> Vector2:
+	var depth := (point.y - RINK.position.y) / RINK.size.y
+	var width_scale := lerpf(0.90, 1.0, depth)
+	return Vector2(480 + (point.x - 480) * width_scale, 340 + depth * 126)
+
+func ice_line(a: Vector2, b: Vector2, color: Color, width := 1.0) -> void:
+	draw_line(ice_to_screen(a), ice_to_screen(b), color, width)
+
+func ice_circle(center: Vector2, radius: float, color: Color) -> void:
+	var points := PackedVector2Array()
+	for i in range(49):
+		points.append(ice_to_screen(center + Vector2(cos(i * TAU / 48), sin(i * TAU / 48)) * radius))
+	draw_polyline(points, color, 1.5)
+
+func draw_goal(left: bool) -> void:
+	var mouth_x := RINK.position.x if left else RINK.end.x
+	var back_x := mouth_x + (-24 if left else 24)
+	var a := ice_to_screen(Vector2(mouth_x, GOAL_TOP))
+	var b := ice_to_screen(Vector2(mouth_x, GOAL_BOTTOM))
+	var c := ice_to_screen(Vector2(back_x, GOAL_TOP))
+	var d := ice_to_screen(Vector2(back_x, GOAL_BOTTOM))
+	var height := Vector2(0, -35)
+	draw_colored_polygon(PackedVector2Array([c, d, d + height, c + height]), Color("789086"))
+	for i in range(6):
+		var f := float(i) / 5
+		draw_line(c.lerp(d, f), c.lerp(d, f) + height, Color("c2cabc"), 1)
+		draw_line(c + height * f, d + height * f, Color("c2cabc"), 1)
+	draw_line(a + height, c + height, Color("a49371"), 2)
+	draw_line(b + height, d + height, Color("a49371"), 2)
+	draw_line(a, a + height, Color("79533b"), 3)
+	draw_line(b, b + height, Color("79533b"), 3)
+	draw_line(a + height, b + height, Color("79533b"), 3)
+
 func _draw() -> void:
-	draw_rect(Rect2(0, 0, 960, 600), Color("142831"))
-	# Distant pines, snow and wooden terraces; all art is generated locally.
+	draw_rect(Rect2(0, 0, 960, 600), Color("91aaa9"))
+	# A low horizon, upright trees and spectators establish a rink-side viewpoint.
 	for i in range(26):
 		var x := float(i * 41 - 25)
-		var height := 35.0 + float((i * 17) % 45)
-		draw_colored_polygon(PackedVector2Array([Vector2(x, 160), Vector2(x + 21, 160 - height), Vector2(x + 42, 160)]), Color("234049"))
-	draw_rect(Rect2(30, 160, 900, 360), Color("bfcbc3"))
-	for i in range(60):
-		var x := 40 + i * 15
-		draw_rect(Rect2(x, 174, 12, 24), Color("6b5040"))
-		draw_rect(Rect2(x + 3, 165 + (i % 3) * 3, 6, 7), Color("bc9879"))
-	draw_rect(Rect2(65, 198, 830, 306), Color("684d39"))
-	draw_rect(Rect2(70, 201, 820, 297), Color("decfae"))
-	draw_rect(RINK, Color("d7e8df"))
-	for i in range(32):
-		var a := Vector2(100 + (i * 97) % 760, 225 + (i * 43) % 245)
-		draw_line(a, a + Vector2(14, -3), Color("bfd6cf"), 1)
-	# No modern blue lines: this is an early gameplay sketch, not a rules simulation.
-	draw_line(Vector2(480, 211), Vector2(480, 489), Color("ab6a62"), 2)
-	draw_arc(CENTER, 46, 0, TAU, 48, Color("ab6a62"), 2)
-	draw_circle(CENTER, 4, Color("ab6a62"))
+		var height := 50.0 + float((i * 17) % 65)
+		draw_colored_polygon(PackedVector2Array([Vector2(x, 286), Vector2(x + 21, 286 - height), Vector2(x + 42, 286)]), Color("365752"))
+	draw_rect(Rect2(0, 285, 960, 236), Color("bdcec5"))
+	for row in range(3):
+		var row_y := 268 + row * 15
+		draw_rect(Rect2(44, row_y + 16, 872, 6), Color("6d5746"))
+		for i in range(58):
+			var x := 52 + i * 15 + (row % 2) * 5
+			draw_rect(Rect2(x, row_y, 9, 17), Color("4b5150") if i % 3 else Color("785b46"))
+			draw_rect(Rect2(x + 2, row_y - 7, 6, 7), Color("c09b79"))
+			draw_rect(Rect2(x + 1, row_y - 9, 8, 3), Color("3f4038"))
+	var far_left := ice_to_screen(RINK.position)
+	var far_right := ice_to_screen(Vector2(RINK.end.x, RINK.position.y))
+	var near_left := ice_to_screen(Vector2(RINK.position.x, RINK.end.y))
+	var near_right := ice_to_screen(RINK.end)
+	draw_colored_polygon(PackedVector2Array([far_left, far_right, near_right, near_left]), Color("d9e8de"))
+	# Far boards rise above the ice instead of looking like a flat border.
+	draw_colored_polygon(PackedVector2Array([far_left, far_right, far_right - Vector2(0, 24), far_left - Vector2(0, 24)]), Color("b9a988"))
+	draw_line(far_left - Vector2(0, 24), far_right - Vector2(0, 24), Color("6a5039"), 4)
+	for i in range(29):
+		var post := far_left.lerp(far_right, float(i) / 28)
+		draw_line(post, post - Vector2(0, 23), Color("8f7d5e"), 1)
+	for i in range(42):
+		var point := Vector2(100 + (i * 97) % 760, 225 + (i * 43) % 245)
+		ice_line(point, point + Vector2(24, -3), Color("bdd3c9"))
+	ice_line(Vector2(480, 211), Vector2(480, 489), Color("ad7770"), 2)
+	ice_circle(CENTER, 46, Color("ad7770"))
+	draw_circle(ice_to_screen(CENTER), 2, Color("ad7770"))
 	for x in [235, 725]:
 		for y in [275, 425]:
-			draw_arc(Vector2(x, y), 25, 0, TAU, 32, Color("a6bdb5"), 1)
-	for x in [58, 880]:
-		draw_rect(Rect2(x, GOAL_TOP, 22, 64), Color("bac6b6"))
-		for y in range(320, 382, 8):
-			draw_line(Vector2(x, y), Vector2(x + 22, y), Color("6c7d73"), 1)
-		draw_rect(Rect2(x, GOAL_TOP, 22, 64), Color("935440"), false, 3)
-	var order: Array[int] = []
+			ice_circle(Vector2(x, y), 25, Color("a3bfb2"))
+	draw_goal(true)
+	draw_goal(false)
+	# Draw far objects first. The puck participates in the same depth ordering.
+	var order: Array[int] = [-1]
 	for i in range(skaters.size()):
 		order.append(i)
-	order.sort_custom(func(a: int, b: int) -> bool: return skaters[a].pos.y < skaters[b].pos.y)
+	order.sort_custom(func(a: int, b: int) -> bool:
+		var ay: float = puck.y if a == -1 else skaters[a].pos.y
+		var by: float = puck.y if b == -1 else skaters[b].pos.y
+		return ay < by)
 	for i in order:
-		draw_skater(i)
-	draw_circle(puck + Vector2(0, 2), 5, Color("9bb4ab"))
-	draw_rect(Rect2(puck - Vector2(4, 2), Vector2(8, 4)), Color("1b292d"))
+		if i == -1:
+			var screen_puck := ice_to_screen(puck).round()
+			draw_rect(Rect2(screen_puck + Vector2(-5, 1), Vector2(10, 3)), Color("9bb4ab"))
+			draw_rect(Rect2(screen_puck - Vector2(4, 2), Vector2(8, 4)), Color("182b30"))
+		else:
+			draw_skater(i)
+	# Low foreground rail leaves feet and puck visible while framing the near side.
+	draw_colored_polygon(PackedVector2Array([near_left + Vector2(0, 8), near_right + Vector2(0, 8), near_right + Vector2(0, 28), near_left + Vector2(0, 28)]), Color("897252"))
+	draw_line(near_left + Vector2(0, 8), near_right + Vector2(0, 8), Color("e0d1ad"), 4)
+	draw_rect(Rect2(0, 520, 960, 80), Color("142831"))
 	draw_rect(Rect2(0, 0, 960, 112), Color("101f27"))
 	text_at("ON ICE", Vector2(30, 40), 29)
 	text_at("A WINTER CLASSIC", Vector2(32, 64), 11, Color("a9bdb6"))
-	text_at("1924 — 1927  /  PROTOTYP 0.1", Vector2(32, 88), 10, Color("d1ae68"))
+	text_at("1924 — 1927  /  PROTOTYP 0.2", Vector2(32, 88), 10, Color("d1ae68"))
 	centered("BOSTON    %d  :  %d    MONTREAL" % [scores[0], scores[1]], 47, 24)
 	var seconds := ceili(remaining)
 	centered("TRÉNING  •  %02d:%02d" % [seconds / 60, seconds % 60], 78, 14, Color("a9bdb6"))
@@ -286,7 +340,7 @@ func _draw() -> void:
 	if mode != "play":
 		draw_rect(Rect2(160, 245, 640, 194), Color(0.04, 0.10, 0.13, 0.96))
 		var title := "ZIMNÁ KLASIKA"
-		var subtitle := "Boston proti Montrealu • skúšobné vonkajšie klzisko"
+		var subtitle := "Boston proti Montrealu • bočný pohľad • vonkajšie klzisko"
 		var prompt := "ENTER  začať zápas"
 		if mode == "paused":
 			title = "PRESTÁVKA"
@@ -302,28 +356,44 @@ func _draw() -> void:
 
 func draw_skater(index: int) -> void:
 	var s: Dictionary = skaters[index]
-	var p: Vector2 = s.pos.round()
+	var p := ice_to_screen(s.pos).round()
+	var depth: float = (s.pos.y - RINK.position.y) / RINK.size.y
+	var scale_factor := lerpf(1.10, 1.35, depth)
+	var facing := 1.0 if s.face.x >= 0 else -1.0
 	var jersey := Color("b58b36") if s.team == 0 else Color("a53c38")
-	var trim := Color("2b2929") if s.team == 0 else Color("ebe0c6")
+	var trim := Color("292c29") if s.team == 0 else Color("ebe0c6")
 	if index == selected:
-		draw_arc(p + Vector2(0, 3), 14, 0, TAU, 20, Color("c48f3b"), 2)
-		draw_colored_polygon(PackedVector2Array([p + Vector2(-5, -48), p + Vector2(5, -48), p + Vector2(0, -41)]), Color("d3a34a"))
-	draw_set_transform(p + Vector2(0, 2), 0, Vector2(1, 0.35))
-	draw_circle(Vector2.ZERO, 12, Color(0.15, 0.26, 0.24, 0.22))
-	draw_set_transform(Vector2.ZERO)
-	var stride := sin(elapsed * 15 + index) * 3 if s.vel.length() > 15 else 0.0
+		draw_set_transform(p + Vector2(0, 3), 0, Vector2(1.6, 0.35))
+		draw_arc(Vector2.ZERO, 10, 0, TAU, 24, Color("b58032"), 2)
+		draw_set_transform(Vector2.ZERO)
+		draw_colored_polygon(PackedVector2Array([p + Vector2(-5, -63), p + Vector2(5, -63), p + Vector2(0, -56)]), Color("ba7b26"))
+	draw_set_transform(p + Vector2(0, 3), 0, Vector2(1.6, 0.25))
+	draw_circle(Vector2.ZERO, 10, Color(0.15, 0.26, 0.24, 0.22))
+	# Mirrored profile: face and stick point along the rink's long axis.
+	draw_set_transform(p, 0, Vector2(facing * scale_factor, scale_factor))
+	var stride := sin(elapsed * 14 + index) * 5 if s.vel.length() > 15 else 1.0
 	for side in [-1, 1]:
-		draw_rect(Rect2(p + Vector2(side * 4 - 3, -11), Vector2(5, 10 + stride * side)), trim)
-		draw_rect(Rect2(p + Vector2(side * 4 - 4, stride * side), Vector2(9, 3)), Color("333b38"))
-		draw_line(p + Vector2(side * 4 - 4, 4 + stride * side), p + Vector2(side * 4 + 6, 4 + stride * side), Color("80908b"), 1)
-	draw_rect(Rect2(p + Vector2(-9, -29), Vector2(18, 19)), jersey)
-	draw_rect(Rect2(p + Vector2(-9, -18), Vector2(18, 4)), trim)
-	draw_rect(Rect2(p + Vector2(-12, -27), Vector2(5, 13)), jersey)
-	draw_rect(Rect2(p + Vector2(8, -27), Vector2(5, 13)), jersey)
-	draw_rect(Rect2(p + Vector2(-12, -16), Vector2(5, 5)), Color("5c4937"))
-	draw_rect(Rect2(p + Vector2(8, -16), Vector2(5, 5)), Color("5c4937"))
-	draw_rect(Rect2(p + Vector2(-6, -39), Vector2(12, 11)), Color("cda17e"))
-	draw_rect(Rect2(p + Vector2(-6, -40), Vector2(12, 4)), Color("503e31"))
-	var stick_side := 1.0 if s.face.x >= 0 else -1.0
-	draw_line(p + Vector2(stick_side * 10, -14), p + Vector2(stick_side * 22, 6), Color("785638"), 3)
-	draw_line(p + Vector2(stick_side * 22, 6), p + Vector2(stick_side * 31, 6), Color("785638"), 3)
+		var hip := Vector2(-2 + side * 3, -15)
+		var knee := Vector2(-4 + side * stride, -8)
+		var foot := Vector2(-5 + side * stride * 1.6, -1)
+		draw_line(hip, knee, trim, 5)
+		draw_line(knee, foot, jersey, 4)
+		draw_line(foot + Vector2(-3, 0), foot + Vector2(5, 0), Color("303b36"), 4)
+		draw_line(foot + Vector2(-4, 3), foot + Vector2(7, 3), Color("758a81"), 1)
+	draw_colored_polygon(PackedVector2Array([Vector2(-9, -32), Vector2(3, -34), Vector2(8, -17), Vector2(-5, -15)]), jersey)
+	draw_line(Vector2(-6, -20), Vector2(6, -22), trim, 4)
+	draw_rect(Rect2(-4, -18, 12, 5), trim)
+	# Bare head, hair and a visible nose: deliberately a side silhouette.
+	draw_rect(Rect2(-2, -44, 10, 11), Color("cda17e"))
+	draw_rect(Rect2(7, -40, 3, 4), Color("cda17e"))
+	draw_rect(Rect2(-3, -45, 11, 4), Color("503e31"))
+	draw_rect(Rect2(6, -40, 1, 1), Color("342e28"))
+	draw_line(Vector2(1, -31), Vector2(9, -23), jersey, 6)
+	draw_line(Vector2(9, -23), Vector2(15, -20), jersey, 5)
+	draw_rect(Rect2(12, -22, 6, 6), Color("5c4937"))
+	draw_line(Vector2(15, -19), Vector2(24, 2), Color("785638"), 2)
+	draw_line(Vector2(24, 2), Vector2(33, 2), Color("785638"), 3)
+	if s.slot == 3:
+		draw_rect(Rect2(-7, -13, 5, 13), Color("b2a183"))
+		draw_rect(Rect2(1, -13, 5, 13), Color("b2a183"))
+	draw_set_transform(Vector2.ZERO)

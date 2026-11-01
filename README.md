@@ -1,4 +1,4 @@
-# On Ice: A Winter Classic — prototyp 0.1
+# On Ice: A Winter Classic — prototyp 0.2
 
 PC hokej inšpirovaný rokmi 1924–1927. Godot 4.6, GDScript, bez externých závislostí.
 
@@ -10,6 +10,17 @@ PC hokej inšpirovaný rokmi 1924–1927. Godot 4.6, GDScript, bez externých z�
 4. Enter spustí tréningový zápas.
 
 Príkazový riadok: `godot --path cesta/k/on-ice`
+
+## Bočný 2,5D pohľad (verzia 0.2)
+
+Kamera je pri bočnom mantineli. Dlhá os ihriska ide zľava doprava; hĺbka ľadu
+je perspektívne stlačená. Hráči sa zobrazujú z profilu v plnej výške, vzdialení
+sú menší. Bránky majú zvislé žrde a mantinely viditeľnú výšku. Hráči a puk sa
+kreslia podľa vzdialenosti od kamery. Šípky hore/dole stále ovládajú pohyb
+do hĺbky plochy, vľavo/vpravo pohyb pozdĺž ihriska.
+
+Simulácia zostáva oddelená od projekcie kamery, takže zmena pohľadu nemení
+rýchlosť puku, kolízie ani vyhodnotenie gólu. Grafika je stále dočasná.
 
 ## Ovládanie
 

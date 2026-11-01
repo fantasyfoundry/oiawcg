@@ -8,6 +8,14 @@ func run_tests() -> void:
 	root.add_child(match_scene)
 	match_scene.set_physics_process(false)
 	match_scene.start_match()
+	# The side camera preserves the long axis but compresses rink depth.
+	var far_left: Vector2 = match_scene.ice_to_screen(Vector2(80, 210))
+	var far_right: Vector2 = match_scene.ice_to_screen(Vector2(880, 210))
+	var near_left: Vector2 = match_scene.ice_to_screen(Vector2(80, 490))
+	var near_right: Vector2 = match_scene.ice_to_screen(Vector2(880, 490))
+	assert(far_left.y == far_right.y and near_left.y == near_right.y, "Rink axis stays horizontal")
+	assert(near_left.y > far_left.y and near_left.y - far_left.y < 150, "Low side camera compresses depth")
+	assert(near_right.x - near_left.x > far_right.x - far_left.x, "Perspective narrows the far side")
 	assert(match_scene.skaters.size() == 8, "Both teams must spawn")
 	match_scene.holder = 1
 	match_scene.puck = match_scene.skaters[1].pos
