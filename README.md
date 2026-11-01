@@ -1,4 +1,4 @@
-# On Ice: A Winter Classic — prototyp 0.2
+# On Ice: A Winter Classic — prototyp 0.3
 
 PC hokej inšpirovaný rokmi 1924–1927. Godot 4.6, GDScript, bez externých závislostí.
 
@@ -11,7 +11,25 @@ PC hokej inšpirovaný rokmi 1924–1927. Godot 4.6, GDScript, bez externých z�
 
 Príkazový riadok: `godot --path cesta/k/on-ice`
 
-## Bočný 2,5D pohľad (verzia 0.2)
+## Nové vo verzii 0.3
+
+- Viac než dvojnásobne dlhé a širšie ihrisko; záber ukazuje len časť plochy.
+- Plynulá bočná kamera sleduje hru a pri rýchlej strele mierne predvída smer puku.
+  Na oboch koncoch sa zastaví tak, aby bola bránka v zábere.
+- Malá mapa pod skóre ukazuje celú plochu, hráčov, puk a aktuálny záber kamery.
+- Väčšie pôvodné postavy: samostatné SVG obrázky 96 × 112 pre každý tím,
+  tiene a záhyby dresu, pracovný klubový znak, číslo, tvár bez prilby,
+  rukavice, pruhované štucne, šnurovanie a oceľové nože korčúľ.
+- Osem fáz odrazu a sklzu. Celý cyklus trvá približne 1,1–1,8 sekundy podľa
+  rýchlosti; pri pustení smeru prechádzajú nohy do pokojného sklzu.
+
+![Ukážka pôvodných postáv a pomalšieho korčuľovania](docs/skating-preview.gif)
+
+Ukážka zobrazuje postavy zväčšené pre kontrolu detailov. V hre ich veľkosť
+mierne závisí od vzdialenosti od kamery. Znaky a dresy sú pracovný výtvarný
+návrh, nie overená rekonštrukcia konkrétnej sezóny.
+
+## Bočný 2,5D pohľad
 
 Kamera je pri bočnom mantineli. Dlhá os ihriska ide zľava doprava; hĺbka ľadu
 je perspektívne stlačená. Hráči sa zobrazujú z profilu v plnej výške, vzdialení
@@ -39,7 +57,7 @@ Zápas trvá tri minúty. Po góle sa obnoví rozostavenie.
 ## Rozsah a historické východiská
 
 Ide o technický prototyp: 3 korčuliari a brankár za každý tím, jednoduchá AI,
-procedurálna dočasná pixelová kresba bez prevzatých log, vonkajšie ihrisko.
+dočasná pixelová kresba prostredia, pôvodné detailnejšie postavy a vonkajšie ihrisko.
 Boston a Montreal sú pracovné tímy v zvolenom období. Dresy nie sú historicky
 zrekonštruované. Hra zatiaľ nesimuluje konkrétnu sezónu ani presné dobové pravidlá.
 Nie sú implementované fauly (Y), tresty, pravidlá prihrávok, striedanie, celé zostavy,
@@ -52,7 +70,7 @@ počítajú pri prechode voľného puku cez otvor bránky na koncovom mantineli.
 2. Rozdelenie zápasu na samostatné scény hráča, puku, ihriska a rozhrania.
 3. Výber konkrétnej sezóny 1924–1927 a zdokumentovanie pravidiel aj výnimiek.
 4. Plné zostavy, lepšia AI brankárov, tresty a fauly.
-5. Animované sprity v Aseprite, zvuky a hlavné menu.
+5. Doladenie animácií a dobových dresov v Aseprite, zvuky a hlavné menu.
 
 ## Overenie
 
@@ -60,6 +78,8 @@ počítajú pri prechode voľného puku cez otvor bránky na koncovom mantineli.
 
 Overuje vytvorenie tímov, strelu, prihrávku, oba góly, odraz od mantinelu,
 získanie puku, pauzu, koniec času a 60 sekúnd simulácie bez neplatných súradníc.
+Kontroluje tiež import väčších postáv, pomalšiu animáciu, rozšírené ihrisko,
+plynulé sledovanie kamerou a viditeľnosť oboch bránok pri krajoch záberu.
 Automatické overenie nehodnotí herný pocit ani vizuálnu kvalitu.
 
 ## Súbory
@@ -68,3 +88,8 @@ Automatické overenie nehodnotí herný pocit ani vizuálnu kvalitu.
 - `main.tscn`: hlavná scéna.
 - `scripts/match.gd`: simulácia, ovládanie, AI a dočasná kresba.
 - `scripts/smoke_test.gd`: automatické kontroly.
+
+- `art/skaters/`: upraviteľné pôvodné SVG postavy (postoj + 8 fáz za tím).
+- `tools/generate_skaters.py`: zdroj kresby a generátor obrázkov bez závislostí.
+- `art/README.md`: súradnice dresu a postup pri zmene výtvarného návrhu.
+- `docs/skating-preview.gif`: zväčšená ukážka animačného cyklu.
